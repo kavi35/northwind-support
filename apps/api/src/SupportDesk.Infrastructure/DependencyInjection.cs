@@ -32,6 +32,8 @@ public static class DependencyInjection
 
         services.AddSingleton<IClock, SystemClock>();
 
+        services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();
+
         services.AddSingleton(SlaPolicyBinder.Bind(configuration));
 
         services.AddScoped<ITicketRepository, TicketRepository>();

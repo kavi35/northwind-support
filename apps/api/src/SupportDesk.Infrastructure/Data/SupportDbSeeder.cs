@@ -17,13 +17,23 @@ namespace SupportDesk.Infrastructure.Data;
 /// Every aggregate is built through its own behaviour. The two historical values no behaviour
 /// produces - a ticket's last update and its due date - are set through EF Core directly.
 /// </remarks>
-public sealed class SupportDbSeeder(SupportDbContext db, IClock clock, ILogger<SupportDbSeeder> logger)
+public sealed class SupportDbSeeder(
+    SupportDbContext db,
+    IClock clock,
+    IPasswordHasher passwords,
+    ILogger<SupportDbSeeder> logger)
 {
+    /// <summary>
+    /// Shared by every seeded agent. Obviously a local fixture, never a password for a real account.
+    /// </summary>
+    public const string DevelopmentPassword = "Local_Dev_AgentPassword1";
+
     /// <summary>Seeds the database, unless it already has tickets in it.</summary>
     public async Task SeedAsync(CancellationToken ct = default)
     {
         if (await db.Set<Ticket>().AnyAsync(ct))
         {
+            await EnsureDevelopmentPasswordsAsync(ct);
             logger.LogInformation("Seed data already present; skipping.");
             return;
         }
@@ -33,6 +43,11 @@ public sealed class SupportDbSeeder(SupportDbContext db, IClock clock, ILogger<S
         var categories = SeedCategories();
         var customers = SeedCustomers(now);
         var agents = SeedAgents(now);
+
+        foreach (var agent in agents)
+        {
+            agent.SetPasswordHash(passwords.Hash(DevelopmentPassword));
+        }
 
         db.AddRange(categories);
         db.AddRange(customers);
@@ -48,6 +63,30 @@ public sealed class SupportDbSeeder(SupportDbContext db, IClock clock, ILogger<S
         logger.LogInformation(
             "Seeded {Categories} categories, {Customers} customers, {Agents} agents and {Tickets} tickets.",
             categories.Count, customers.Count, agents.Count, await db.Set<Ticket>().CountAsync(ct));
+    }
+
+    /// <summary>
+    /// An existing database has no password column until this migration. Fill only the agents
+    /// that still have none, hashed here rather than stored as text.
+    /// </summary>
+    private async Task EnsureDevelopmentPasswordsAsync(CancellationToken ct)
+    {
+        var missing = await db.Set<Agent>()
+            .Where(agent => agent.PasswordHash == null || agent.PasswordHash == "")
+            .ToListAsync(ct);
+
+        if (missing.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var agent in missing)
+        {
+            agent.SetPasswordHash(passwords.Hash(DevelopmentPassword));
+        }
+
+        await db.SaveChangesAsync(ct);
+        logger.LogInformation("Stored development password hashes for {Count} existing agents.", missing.Count);
     }
 
     private static List<Category> SeedCategories() =>

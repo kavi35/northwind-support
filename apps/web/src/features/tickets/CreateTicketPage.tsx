@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { formatDateTime } from '../../lib/format';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { Spinner } from '../../components/Spinner';
 import { useReferenceData } from '../../hooks/useReferenceData';
@@ -33,6 +34,19 @@ export function CreateTicketPage() {
           <p>
             Raised <strong>{created.reference}</strong> for {created.customer.name}.
           </p>
+          <p>
+            Priority <strong>{created.priority}</strong>. Due {formatDateTime(created.dueAtUtc)}.
+            {created.assignedAgent
+              ? ` Assigned to ${created.assignedAgent.fullName}.`
+              : ' Left unassigned.'}
+          </p>
+          {created.triage && (
+            <ul>
+              <li>{created.triage.priorityReason}</li>
+              <li>{created.triage.slaWindowReason}</li>
+              <li>{created.triage.assignmentReason}</li>
+            </ul>
+          )}
           <div className="button-row">
             <button
               type="button"

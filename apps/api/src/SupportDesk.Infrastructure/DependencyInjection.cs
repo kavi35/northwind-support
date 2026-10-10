@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SupportDesk.Application.Abstractions;
 using SupportDesk.Domain.Repositories;
 using SupportDesk.Infrastructure.Data;
+using SupportDesk.Domain.Aggregates.Tickets;
 using SupportDesk.Infrastructure.Queries;
 using SupportDesk.Infrastructure.Repositories;
 using SupportDesk.Infrastructure.Services;
@@ -30,6 +31,8 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<SupportDbContext>());
 
         services.AddSingleton<IClock, SystemClock>();
+
+        services.AddSingleton(SlaPolicyBinder.Bind(configuration));
 
         services.AddScoped<ITicketRepository, TicketRepository>();
         services.AddScoped<IAgentRepository, AgentRepository>();

@@ -3,7 +3,9 @@ using SupportDesk.Application.Contracts.Common;
 using SupportDesk.Application.Contracts.Tickets;
 using SupportDesk.Application.Features.Tickets.Commands.AssignTicket;
 using SupportDesk.Application.Features.Tickets.Commands.ChangeTicketStatus;
+using SupportDesk.Application.Features.Tickets.Commands.EscalateTicket;
 using SupportDesk.Application.Features.Tickets.Commands.RaiseTicket;
+using SupportDesk.Application.Features.Tickets.Queries.GetEscalations;
 using SupportDesk.Application.Features.Tickets.Queries.GetTicket;
 using SupportDesk.Application.Features.Tickets.Queries.SearchTickets;
 
@@ -47,6 +49,23 @@ public sealed class TicketsController : ControllerBase
         [FromServices] ChangeTicketStatusCommandHandler handler,
         CancellationToken ct) =>
         handler.HandleAsync(id, request, ct);
+
+    /// <summary>Raises priority one level and records who did it and why.</summary>
+    [HttpPost("{id:int}/escalate")]
+    public Task<EscalateTicketResponse> Escalate(
+        int id,
+        EscalateTicketRequest request,
+        [FromServices] EscalateTicketCommandHandler handler,
+        CancellationToken ct) =>
+        handler.HandleAsync(id, request, ct);
+
+    /// <summary>Escalation history, newest first.</summary>
+    [HttpGet("{id:int}/escalations")]
+    public Task<IReadOnlyList<TicketEscalationDto>> Escalations(
+        int id,
+        [FromServices] GetEscalationsQueryHandler handler,
+        CancellationToken ct) =>
+        handler.HandleAsync(id, ct);
 
     /// <summary>Assigns the ticket to an agent, or unassigns it when no agent is given.</summary>
     [HttpPatch("{id:int}/assignment")]

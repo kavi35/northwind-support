@@ -110,6 +110,14 @@ Search stays debounced by 300ms, so typing does not send one request per keystro
 
 `TicketQueries.ApplyFilters` adds one `Where` for each supplied value. The database applies them, with AND, before `CountAsync` and before `Skip`/`Take`, so `totalCount` and `totalPages` describe the filtered set. A further filter is another condition in that method. The query tests run against SQLite and assert the filtered count; the logged SQL for the priority filter contains `WHERE`.
 
+## Task 2
+
+Create and escalate share one triage path. Priority comes from the request, or Medium when none was given, unless the category's `ForcesCriticalPriority` flag forces Critical. Category names are not used. The due date is the moment of creation or escalation plus the window from the `Sla` configuration: premium customers get the multiplier, and the result is never shorter than the configured floor. The owner is the active eligible agent with the fewest open tickets. A tie uses the lowest agent id. The agent who already holds the ticket can keep it on escalation even when that ticket is what fills their limit; anyone else must be strictly below their limit. If nobody qualifies, the ticket is created or left unassigned and the response says why. That is a 201, not an error.
+
+SLA status is still derived. Unresolved tickets with 25% or less of the configured window left are At risk. The list filter for `slaStatus` is a SQL predicate using those same windows. Escalations are stored in `TicketEscalations`. Deleting a ticket deletes its history. Agent foreign keys restrict deletes so history is not dropped with an agent. `IX_TicketEscalations_TicketId_EscalatedAtUtc` exists because the history endpoint always reads one ticket, newest first. `IX_TicketEscalations_FromAgentId` and `IX_TicketEscalations_ToAgentId` exist so a change to an agent does not scan the whole history table to enforce those foreign keys.
+
+Until sign-in exists, escalate sends `escalatedBy` from the form.
+
 ## Troubleshooting
 
 | Symptom | Fix |

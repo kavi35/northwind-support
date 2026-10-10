@@ -111,4 +111,38 @@ public sealed class Ticket : AggregateRoot
         AssignedAgentId = agentId;
         UpdatedAtUtc = nowUtc;
     }
+
+    /// <summary>Records the due date and owner chosen when the ticket was raised.</summary>
+    public void ApplySchedule(DateTime dueAtUtc, int? agentId, DateTime nowUtc)
+    {
+        DueAtUtc = dueAtUtc;
+        AssignedAgentId = agentId;
+        UpdatedAtUtc = nowUtc;
+    }
+
+    /// <summary>
+    /// Moves the ticket up one priority, with a new due date and owner. Resolved, Closed and
+    /// Critical tickets cannot be escalated.
+    /// </summary>
+    /// <exception cref="BusinessRuleViolationException">The ticket cannot be escalated.</exception>
+    public void EscalateTo(TicketPriority newPriority, DateTime dueAtUtc, int? agentId, DateTime nowUtc)
+    {
+        if (Status is TicketStatus.Resolved or TicketStatus.Closed)
+        {
+            throw new BusinessRuleViolationException(
+                $"Ticket {Reference} is {Status} and cannot be escalated.");
+        }
+
+        var raised = TicketPriorityRules.Raise(Priority, Reference);
+        if (newPriority != raised)
+        {
+            throw new BusinessRuleViolationException(
+                $"Ticket {Reference} can only be escalated from {Priority} to {raised}.");
+        }
+
+        Priority = newPriority;
+        DueAtUtc = dueAtUtc;
+        AssignedAgentId = agentId;
+        UpdatedAtUtc = nowUtc;
+    }
 }

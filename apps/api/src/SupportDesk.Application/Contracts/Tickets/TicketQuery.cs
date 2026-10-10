@@ -32,6 +32,9 @@ public sealed record TicketQuery
 
     public bool UnassignedOnly { get; init; }
 
+    /// <summary>Derived SLA status. Applied in the database, like the other filters.</summary>
+    public SlaStatus? SlaStatus { get; init; }
+
     /// <summary>createdAtUtc | updatedAtUtc | dueAtUtc | priority | status.</summary>
     public string SortBy { get; init; } = "createdAtUtc";
 

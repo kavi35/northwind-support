@@ -92,6 +92,23 @@ public class TicketQueriesFilterTests
     }
 
     [Fact]
+    public async Task SlaStatus_IsAppliedInTheDatabase()
+    {
+        await using var fixture = await FilterFixture.CreateAsync();
+
+        var withoutDueDate = await fixture.Queries.GetPagedAsync(
+            new TicketQuery { SlaStatus = SlaStatus.NotApplicable, Page = 1, PageSize = 20 },
+            CancellationToken.None);
+        var breached = await fixture.Queries.GetPagedAsync(
+            new TicketQuery { SlaStatus = SlaStatus.Breached, Page = 1, PageSize = 20 },
+            CancellationToken.None);
+
+        Assert.Equal(FilterFixture.TicketCount, withoutDueDate.TotalCount);
+        Assert.Equal(0, breached.TotalCount);
+        Assert.Contains("WHERE", fixture.Sql.ToString(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task UnassignedOnly_ReturnsTicketsWithNoAgent()
     {
         await using var fixture = await FilterFixture.CreateAsync();
@@ -152,7 +169,7 @@ public class TicketQueriesFilterTests
                 await db.Database.EnsureCreatedAsync();
                 await SeedAsync(db);
 
-                return new FilterFixture(connection, db, new TicketQueries(db, new FixedClock()), sql);
+                return new FilterFixture(connection, db, new TicketQueries(db, new FixedClock(), SlaPolicy.Default), sql);
             }
             catch
             {

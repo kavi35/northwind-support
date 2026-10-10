@@ -35,4 +35,7 @@ public sealed class TicketDetailDto
 
     /// <summary>Derived from the dates above; never stored.</summary>
     public SlaStatus SlaStatus { get; set; }
+
+    /// <summary>Set when the ticket was just raised. Null on later reads.</summary>
+    public TriageDto? Triage { get; set; }
 }

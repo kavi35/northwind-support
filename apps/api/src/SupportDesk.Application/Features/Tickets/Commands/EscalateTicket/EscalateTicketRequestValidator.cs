@@ -12,9 +12,5 @@ public sealed class EscalateTicketRequestValidator : AbstractValidator<EscalateT
             .NotEmpty()
             .MinimumLength(TicketEscalation.ReasonMinLength)
             .MaximumLength(TicketEscalation.ReasonMaxLength);
-
-        RuleFor(request => request.EscalatedBy)
-            .NotEmpty()
-            .MaximumLength(TicketEscalation.EscalatedByMaxLength);
     }
 }

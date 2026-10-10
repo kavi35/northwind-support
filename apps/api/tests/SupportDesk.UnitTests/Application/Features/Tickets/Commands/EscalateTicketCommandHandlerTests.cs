@@ -1,3 +1,4 @@
+using SupportDesk.Application.Abstractions;
 using SupportDesk.Application.Contracts.Tickets;
 using SupportDesk.Application.Features.Tickets.Commands.EscalateTicket;
 using SupportDesk.Application.Features.Tickets.Queries.GetTicket;
@@ -10,7 +11,8 @@ namespace SupportDesk.UnitTests.Application.Features.Tickets.Commands;
 
 public class EscalateTicketCommandHandlerTests
 {
-    private static readonly EscalateTicketRequest Request = new("The customer is now completely blocked.", "Alex Turner");
+    private static readonly EscalateTicketRequest Request = new("The customer is now completely blocked.");
+    private const string Actor = "Alex Turner";
 
     [Fact]
     public async Task HandleAsync_RaisesPriorityOneStepAndRecomputesTheDueDateFromNow()
@@ -54,7 +56,7 @@ public class EscalateTicketCommandHandlerTests
         Assert.Equal(4, context.Recorded!.FromAgentId);
         Assert.Equal(2, context.Recorded.ToAgentId);
         Assert.Equal(Request.Reason, context.Recorded.Reason);
-        Assert.Equal(Request.EscalatedBy, context.Recorded.EscalatedBy);
+        Assert.Equal(Actor, context.Recorded.EscalatedBy);
         Assert.Equal(context.Clock.UtcNow, context.Recorded.EscalatedAtUtc);
         Assert.Equal(TicketPriority.Medium, context.Recorded.FromPriority);
         Assert.Equal(TicketPriority.High, context.Recorded.ToPriority);
@@ -89,15 +91,14 @@ public class EscalateTicketCommandHandlerTests
     }
 
     [Fact]
-    public async Task Validator_RejectsAShortReasonAndAMissingActor()
+    public async Task Validator_RejectsAShortReason()
     {
         var validator = new EscalateTicketRequestValidator();
 
-        var result = await validator.ValidateAsync(new EscalateTicketRequest("no", ""));
+        var result = await validator.ValidateAsync(new EscalateTicketRequest("no"));
 
         Assert.False(result.IsValid);
         Assert.Contains(result.Errors, error => error.PropertyName == nameof(EscalateTicketRequest.Reason));
-        Assert.Contains(result.Errors, error => error.PropertyName == nameof(EscalateTicketRequest.EscalatedBy));
     }
 
     private static EscalationContext Context(params AgentCandidate[] agents)
@@ -119,10 +120,18 @@ public class EscalateTicketCommandHandlerTests
             commands.Agents.Object,
             commands.UnitOfWork.Object,
             commands.Clock,
+            new FixedAgent(Actor),
             new GetTicketQueryHandler(commands.TicketQueries.Object),
             new TicketTriage(SlaPolicy.Default));
 
         return new EscalationContext(commands, handler, () => recorded);
+    }
+
+    private sealed class FixedAgent(string fullName) : ICurrentAgent
+    {
+        public int Id => 1;
+
+        public string FullName => fullName;
     }
 
     private static AgentCandidate Candidate(int id, string name, int open, int max, bool active = true) =>

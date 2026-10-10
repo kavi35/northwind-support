@@ -19,6 +19,7 @@ public sealed class EscalateTicketCommandHandler(
     IAgentRepository agents,
     IUnitOfWork unitOfWork,
     IClock clock,
+    ICurrentAgent currentAgent,
     GetTicketQueryHandler getTicket,
     TicketTriage triage)
 {
@@ -68,7 +69,7 @@ public sealed class EscalateTicketCommandHandler(
             fromDue,
             decision.DueAtUtc,
             request.Reason,
-            request.EscalatedBy,
+            currentAgent.FullName,
             now);
 
         await tickets.AddEscalationAsync(escalation, ct);

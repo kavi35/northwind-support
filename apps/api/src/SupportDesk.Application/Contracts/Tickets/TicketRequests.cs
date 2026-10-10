@@ -16,8 +16,8 @@ public sealed record UpdateTicketStatusRequest(TicketStatus Status);
 /// <summary>Body of PATCH /api/tickets/{id}/assignment. A null agent unassigns the ticket.</summary>
 public sealed record AssignTicketRequest(int? AgentId);
 
-/// <summary>Body of POST /api/tickets/{id}/escalate.</summary>
-public sealed record EscalateTicketRequest(string Reason, string EscalatedBy);
+/// <summary>Body of POST /api/tickets/{id}/escalate. Who escalated it comes from the token.</summary>
+public sealed record EscalateTicketRequest(string Reason);
 
 /// <summary>Why the priority, the window and the owner came out the way they did.</summary>
 public sealed record TriageDto(string PriorityReason, string SlaWindowReason, string AssignmentReason);

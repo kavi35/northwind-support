@@ -71,7 +71,7 @@ credentials.**
 npm test                      # dotnet test, then the web tests (Vitest)
 ```
 
-Both pass on a clean checkout and neither needs a database.
+Both pass on a clean checkout. The API tests use SQLite in memory for the ticket-list filters and otherwise need no database server.
 
 ## Commands
 
@@ -87,7 +87,7 @@ Both pass on a clean checkout and neither needs a database.
 
 | Endpoint | Description |
 | --- | --- |
-| `GET /api/tickets` | Paged list with `search`, `status`, `priority`, `categoryId`, `customerId`, `assignedAgentId`, `unassignedOnly`, `sortBy`, `sortDirection`. **Filters are accepted but not applied yet** (Task 1). |
+| `GET /api/tickets` | Paged list. `search`, `status`, `priority`, `categoryId`, `customerId`, `assignedAgentId` and `unassignedOnly` are applied in the database before the count and the page. |
 | `GET /api/tickets/{id}` | One ticket |
 | `POST /api/tickets` | Create a ticket |
 | `PATCH /api/tickets/{id}/status` · `/assignment` | Change status / assignee |
@@ -97,6 +97,18 @@ Errors are `ProblemDetails`: `400` validation, `404` not found, `409` conflict o
 
 **Seed data:** 5 categories, 6 customers (3 Premium), 6 agents (one inactive, one at their limit)
 and 40 tickets across every status, priority and SLA state.
+
+## Task 1
+
+### DEFECT-117
+
+The ticket list refetched only when the search text, the page, or the page size changed. Choosing a status, or any other filter, updated the controls but did not call `GET /api/tickets`. That choice was sent only on a later search, and the list went stale again once the search was cleared.
+
+Search stays debounced by 300ms, so typing does not send one request per keystroke. Any other change to the filter object sends a request immediately. A filter added later, such as SLA status, is part of that same object and needs no extra wiring in the hook.
+
+### Filtering
+
+`TicketQueries.ApplyFilters` adds one `Where` for each supplied value. The database applies them, with AND, before `CountAsync` and before `Skip`/`Take`, so `totalCount` and `totalPages` describe the filtered set. A further filter is another condition in that method. The query tests run against SQLite and assert the filtered count; the logged SQL for the priority filter contains `WHERE`.
 
 ## Troubleshooting
 

@@ -1,4 +1,5 @@
 import type { ProblemDetails } from '../types/api';
+import { clearSession, readSession, redirectToLogin } from './session';
 
 /**
  * Where the API lives. In development this stays '/api' and the Vite dev server proxies it
@@ -30,16 +31,30 @@ export class ApiError extends Error {
  * {@link ApiError} that callers can show to the user.
  */
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers);
+
+  if (!headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  const session = readSession();
+
+  if (session && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${session.token}`);
+  }
+
   const response = await fetch(`${baseUrl}${path}`, {
     ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init?.headers ?? {}),
-    },
+    headers,
   });
 
   if (!response.ok) {
     const problem = await readProblem(response);
+
+    if (response.status === 401 && !path.startsWith('/auth/login')) {
+      clearSession();
+      redirectToLogin();
+    }
 
     throw new ApiError(
       response.status,

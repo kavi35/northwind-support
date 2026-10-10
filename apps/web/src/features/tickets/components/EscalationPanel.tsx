@@ -7,7 +7,6 @@ import type { TicketDetail, TicketEscalation } from '../../../types/api';
 
 const reasonMin = 5;
 const reasonMax = 500;
-const actorMax = 100;
 
 interface EscalationPanelProps {
   ticket: TicketDetail;
@@ -17,8 +16,7 @@ interface EscalationPanelProps {
 /** Records an escalation and shows the history, without reloading the page. */
 export function EscalationPanel({ ticket, onUpdated }: EscalationPanelProps) {
   const [reason, setReason] = useState('');
-  const [escalatedBy, setEscalatedBy] = useState('');
-  const [errors, setErrors] = useState<{ reason?: string; escalatedBy?: string }>({});
+  const [errors, setErrors] = useState<{ reason?: string }>({});
   const [submitError, setSubmitError] = useState<string>();
   const [isSaving, setIsSaving] = useState(false);
   const [history, setHistory] = useState<TicketEscalation[]>([]);
@@ -50,20 +48,19 @@ export function EscalationPanel({ ticket, onUpdated }: EscalationPanelProps) {
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const nextErrors = validate(reason, escalatedBy);
+    const nextErrors = validate(reason);
     setErrors(nextErrors);
     setSubmitError(undefined);
 
-    if (nextErrors.reason || nextErrors.escalatedBy) {
+    if (nextErrors.reason) {
       return;
     }
 
     setIsSaving(true);
 
     try {
-      const result = await ticketsApi.escalate(ticket.id, reason.trim(), escalatedBy.trim());
+      const result = await ticketsApi.escalate(ticket.id, reason.trim());
       setReason('');
-      setEscalatedBy('');
       setHistory((current) => [result.escalation, ...current.filter((row) => row.id !== result.escalation.id)]);
       onUpdated(result.ticket);
     } catch (caught) {
@@ -90,17 +87,6 @@ export function EscalationPanel({ ticket, onUpdated }: EscalationPanelProps) {
       )}
 
       <form className="form" onSubmit={(event) => void submit(event)}>
-        <Field id="escalate-by" label="Escalated by" error={errors.escalatedBy} hint="Until sign-in, say who you are.">
-          {(props) => (
-            <input
-              {...props}
-              value={escalatedBy}
-              maxLength={actorMax}
-              onChange={(event) => setEscalatedBy(event.target.value)}
-            />
-          )}
-        </Field>
-
         <Field
           id="escalate-reason"
           label="Reason"
@@ -156,18 +142,12 @@ export function EscalationPanel({ ticket, onUpdated }: EscalationPanelProps) {
   );
 }
 
-function validate(reason: string, escalatedBy: string): { reason?: string; escalatedBy?: string } {
-  const errors: { reason?: string; escalatedBy?: string } = {};
+function validate(reason: string): { reason?: string } {
   const trimmedReason = reason.trim();
-  const trimmedBy = escalatedBy.trim();
 
   if (trimmedReason.length < reasonMin || trimmedReason.length > reasonMax) {
-    errors.reason = `Enter a reason of ${reasonMin} to ${reasonMax} characters.`;
+    return { reason: `Enter a reason of ${reasonMin} to ${reasonMax} characters.` };
   }
 
-  if (trimmedBy.length === 0 || trimmedBy.length > actorMax) {
-    errors.escalatedBy = `Enter a name of up to ${actorMax} characters.`;
-  }
-
-  return errors;
+  return {};
 }

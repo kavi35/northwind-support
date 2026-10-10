@@ -76,6 +76,25 @@ a {
   font-weight: 600;
 }
 
+.app__session {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.login .card {
+  width: min(420px, 100%);
+}
+
 .app__main {
   max-width: 1200px;
   margin: 0 auto;

@@ -116,7 +116,17 @@ Create and escalate share one triage path. Priority comes from the request, or M
 
 SLA status is still derived. Unresolved tickets with 25% or less of the configured window left are At risk. The list filter for `slaStatus` is a SQL predicate using those same windows. Escalations are stored in `TicketEscalations`. Deleting a ticket deletes its history. Agent foreign keys restrict deletes so history is not dropped with an agent. `IX_TicketEscalations_TicketId_EscalatedAtUtc` exists because the history endpoint always reads one ticket, newest first. `IX_TicketEscalations_FromAgentId` and `IX_TicketEscalations_ToAgentId` exist so a change to an agent does not scan the whole history table to enforce those foreign keys.
 
-Until sign-in exists, escalate sends `escalatedBy` from the form.
+The name recorded on an escalation is the signed-in agent's name from the token.
+
+## Task 3
+
+An agent signs in with the email already stored on `Agent` and a `PasswordHash` column on that same row. A separate users table would copy the person the rest of the model already calls an agent. Passwords are hashed with ASP.NET Core Identity's `PasswordHasher` (PBKDF2 and a random salt) when the development data is seeded, not stored as text. Every seeded agent, including the inactive one, uses the local fixture password `Local_Dev_AgentPassword1`.
+
+`POST /api/auth/login` returns a JWT, when it expires, and the agent's id, name and email. An unknown email, a wrong password and an inactive agent all get 401 with the message "The email or password is incorrect." `GET /api/auth/me` returns that agent, or 401. Every other endpoint requires a valid token through the fallback authorization policy. Login and Swagger do not.
+
+The signing key is `Jwt:SigningKey` (`Jwt__SigningKey` in the environment), listed in `.env.example`. The development value is a fixture. Tokens last 8 hours (`Jwt:LifetimeMinutes` = 480). The browser keeps the token in `localStorage` under `support-desk.session` and sends it as `Authorization: Bearer`. That survives a refresh and is shared by tabs on this origin. Any script that can run in the page can read it; an httpOnly cookie would not, but this client is a separate app that attaches a bearer token. A 401 from any call except login clears that session and returns the agent to `/login`, which then sends them back to the page they asked for.
+
+Deactivating an agent does not cancel a token that was already issued. It stops being accepted when it expires. There is no registration, password reset, refresh token, MFA or lockout.
 
 ## Troubleshooting
 

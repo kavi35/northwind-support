@@ -48,7 +48,6 @@ describe('EscalationPanel', () => {
 
     await screen.findByText('No escalations yet.');
     await user.type(screen.getByLabelText('Reason'), 'no');
-    await user.type(screen.getByLabelText('Escalated by'), 'Alex');
     await user.click(screen.getByRole('button', { name: 'Escalate' }));
 
     expect(escalate).not.toHaveBeenCalled();
@@ -66,7 +65,6 @@ describe('EscalationPanel', () => {
 
     await screen.findByText('No escalations yet.');
     await user.type(screen.getByLabelText('Reason'), 'The customer is blocked.');
-    await user.type(screen.getByLabelText('Escalated by'), 'Alex');
     await user.click(screen.getByRole('button', { name: 'Escalate' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Critical');

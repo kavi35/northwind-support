@@ -6,6 +6,15 @@
     <ProjectReference Include="../SupportDesk.Infrastructure/SupportDesk.Infrastructure.csproj" />
   </ItemGroup>
 
+  <!--
+    Development settings hold the local connection string and the JWT fixture.
+    They stay on a developer machine. A published build, including the container
+    image, does not contain them.
+  -->
+  <ItemGroup>
+    <Content Update="appsettings.Development.json" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Swashbuckle.AspNetCore" />

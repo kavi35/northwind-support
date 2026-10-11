@@ -1,0 +1,15 @@
+# Keep the API build context small and free of secrets.
+
+**/bin/
+**/obj/
+**/node_modules/
+.git/
+.env
+.env.*
+!.env.example
+
+# The React app is not part of the API image.
+apps/web/
+
+# Local fixture settings. The container receives these values at run time.
+apps/api/src/SupportDesk.Presentation/appsettings.Development.json

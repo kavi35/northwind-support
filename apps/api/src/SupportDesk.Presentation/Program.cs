@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using SupportDesk.Application;
 using SupportDesk.Application.Abstractions;
@@ -9,6 +10,7 @@ using SupportDesk.Infrastructure;
 using SupportDesk.Presentation.Auth;
 using SupportDesk.Presentation.Extensions;
 using SupportDesk.Presentation.Filters;
+using SupportDesk.Presentation.Health;
 using SupportDesk.Presentation.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -66,6 +68,10 @@ builder.Services.AddAuthorization(options =>
         .Build();
 });
 
+// Same composition root as the fallback policy. Login and this probe are the anonymous exceptions.
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("database");
+
 var app = builder.Build();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
@@ -84,5 +90,11 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// AllowAnonymous opts this endpoint out of the fallback policy, so a probe needs no token.
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = HealthCheckResponse.WriteAsync
+}).AllowAnonymous();
 
 app.Run();
